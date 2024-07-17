@@ -21,38 +21,28 @@ TOTAL_WRITE_SIZE=$((40 * 1024)) # in MB
 IO_SIZES="4K 16K 64K 1M"
 NUM_THREADS="1 4 16"
 
-resetCPUCores() {
-
-	# Turning on all cores in NUMA 1.
-	python3 tools/cpu-onlining.py -s16 -e31
-}
-
 umountFS() {
 	sudo umount $MOUNT_PATH || true
 }
 
 ##### Configuration for the different number of threads. Called in run_tput_all.sh
-configCPU () {
+configMultiThread () {
 
-	# Adjust the number of CPU cores and reformat to adjust the total journal size.
+	# Reformat to adjust the total journal size.
 
 	umountFS
-	resetCPUCores
 
 	case "$NUM_THREAD" in
 		"1")
 			# Enable 4 cores in NUMA 1. (Each core has 5GB journal space.)
-			python3 tools/cpu-offlining.py -s 19 -e 31
 			./format.sh 5120 $DEV_PATH
 			;;
 		"4")
 			# Enable 8 cores in NUMA 1. (Each core has 5GB/4 = 1280MB journal space.)
-			python3 tools/cpu-offlining.py -s 24 -e 31
 			./format.sh 1280 $DEV_PATH
 			;;
 		"16")
 			# Enable all (16 cores) in NUMA 1. (Each core has 5GB/16 = 320MB journal space.)
-			python3 tools/cpu-offlining.py # Only showing the current state.
 			./format.sh 320 $DEV_PATH
 			;;
 	esac
@@ -79,9 +69,7 @@ runFileSystemSpecific() {
 # Execute only this script is directly executed. (Not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
-	## Turning off most of cores in NUMA 0.
-	python3 tools/cpu-offlining.py -s 2 -e 15
-
+	# zj kernel does not support our testbed CPU.
 	# fixCPUFreq
 
 	loopMicroTput
@@ -89,8 +77,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
 	## Wrap up
 	umountFS
-	resetCPUCores
 
-	## Turning off most of cores in NUMA 0.
-	python3 tools/cpu-onlining.py -s 2 -e 15
 fi

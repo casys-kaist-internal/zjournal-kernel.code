@@ -4,7 +4,7 @@
 
 ```shell
 git clone https://github.com/yulistic-benchmarks/FS_microbench.git micro
-git checkout d38958d
+git checkout 1d75ca2
 ```
 
 ### Set proper configurations in the script files
