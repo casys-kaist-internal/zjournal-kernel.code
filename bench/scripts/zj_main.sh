@@ -48,7 +48,8 @@ configMultiThread () {
 	esac
 
 	sudo mount -t ext4mj $DEV_PATH $MOUNT_PATH
-	sudo mkdir -p $DIR
+	sudo chown -R $USER:$USER $MOUNT_PATH
+	mkdir -p $DIR
 }
 
 ###### File system specific main function. Should be declared. Called in run_tput_all.sh
