@@ -2,7 +2,10 @@
 # Main function for FS_microbench.
 set -ex
 
-source ../micro/scripts/run_tput_all.sh || { echo "Run in the project root directory."; exit 1;}
+source ../micro/scripts/run_tput_all.sh || { echo "Run in the directory where this script is."; exit 1;}
+
+# To source zjournal's e2fsprog path.
+source ./format.sh || { echo "Run in the directory where this script is."; exit 1;}
 
 MOUNT_PATH="/mnt/zj"
 
@@ -13,13 +16,16 @@ MOUNT_PATH="/mnt/zj"
 DEV_PATH="$(sudo nvme list | grep "SAMSUNG MZPLJ3T2HBJR-00007" | xargs | cut -d " " -f 1)"
 echo Device path: "$DEV_PATH"
 
+# Set total journal size.
+# TOTAL_JOURNAL_SIZE=5120 # 5 GB
+TOTAL_JOURNAL_SIZE=$((38 * 1024)) # 38 GB
 
 ############# Overriding configurations of run_tput_all.sh
 DIRS="$MOUNT_PATH/zj_journal"
 OPS="sw"
-TOTAL_WRITE_SIZE=$((40 * 1024)) # in MB
+TOTAL_WRITE_SIZE=$((30 * 1024)) # in MB
 IO_SIZES="4K 16K 64K 1M"
-NUM_THREADS="1 4 16"
+NUM_THREADS="1 4 8 16"
 
 umountFS() {
 	sudo umount $MOUNT_PATH || true
@@ -28,24 +34,12 @@ umountFS() {
 ##### Configuration for the different number of threads. Called in run_tput_all.sh
 configMultiThread () {
 
-	# Reformat to adjust the total journal size.
-
 	umountFS
 
-	case "$NUM_THREAD" in
-		"1")
-			# Enable 4 cores in NUMA 1. (Each core has 5GB journal space.)
-			./format.sh 5120 $DEV_PATH
-			;;
-		"4")
-			# Enable 8 cores in NUMA 1. (Each core has 5GB/4 = 1280MB journal space.)
-			./format.sh 1280 $DEV_PATH
-			;;
-		"16")
-			# Enable all (16 cores) in NUMA 1. (Each core has 5GB/16 = 320MB journal space.)
-			./format.sh 320 $DEV_PATH
-			;;
-	esac
+	# Reformat to adjust the total journal size.
+	percore_journal_size="$(echo "$TOTAL_JOURNAL_SIZE / $NUM_THREAD" | bc)"
+	echo "Journal size: Total = $TOTAL_JOURNAL_SIZE MB, Per-core = $percore_journal_size MB"
+	./format.sh $percore_journal_size $DEV_PATH
 
 	sudo mount -t ext4mj $DEV_PATH $MOUNT_PATH
 	sudo chown -R $USER:$USER $MOUNT_PATH
@@ -56,6 +50,9 @@ configMultiThread () {
 runFileSystemSpecific() {
 
 	echo "z-journal main function."
+
+	# dump file system configs.
+	sudo $E2FSPROG_PATH/misc/dumpe2fs -h $DEV_PATH > ${OUT_FILE}.fsconf
 
 	CMD="$PERF_PREFIX $PINNING $BENCH_MICRO/build/tput_micro -d $DIR -s $OP ${FILE_SIZE}M $IO_SIZE $NUM_THREAD"
 
