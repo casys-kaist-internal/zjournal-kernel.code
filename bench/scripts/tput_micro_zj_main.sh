@@ -34,9 +34,9 @@ umountFS() {
 ##### Configuration for the different number of threads. Called in run_tput_all.sh
 configMultiThread () {
 
+	# Reformat to adjust the total journal size.
 	umountFS
 
-	# Reformat to adjust the total journal size.
 	percore_journal_size="$(echo "$TOTAL_JOURNAL_SIZE / $NUM_THREAD" | bc)"
 	echo "Journal size: Total = $TOTAL_JOURNAL_SIZE MB, Per-core = $percore_journal_size MB"
 	./format.sh $percore_journal_size $DEV_PATH
