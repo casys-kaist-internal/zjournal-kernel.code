@@ -21,7 +21,7 @@ echo Device path: "$DEV_PATH"
 TOTAL_JOURNAL_SIZE=$((38 * 1024)) # 38 GB
 
 ############# Overriding configurations.
-# NUM_THREADS="16 8 4 2 1"
+NUM_THREADS="1 2 4 8 16"
 
 umountFS() {
 	sudo umount $MOUNT_PATH || true
@@ -38,7 +38,7 @@ configMultiThread() {
 	echo "Journal size: Total = $TOTAL_JOURNAL_SIZE MB, Per-core = $percore_journal_size MB"
 	./format.sh $percore_journal_size $DEV_PATH
 
-	sudo mount -t ext4mj $DEV_PATH $MOUNT_PATH
+	sudo mount -t ext4mj -o barrier=0 $DEV_PATH $MOUNT_PATH
 	sudo chown -R $USER:$USER $MOUNT_PATH
 	mkdir -p $DIR
 }

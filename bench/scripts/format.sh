@@ -31,6 +31,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 	echo "Total journal size: $TOTAL_JOURNAL_SIZE MB ($(nproc) cores)"
 	echo "Device path: $DEV_PATH"
 
-	sudo $E2FSPROG_PATH/misc/mke2fs -t ext4 -J size=$PER_CORE_JOURNAL_SIZE,multi_journal -F -G 1 $DEV_PATH
+	sudo $E2FSPROG_PATH/misc/mke2fs -t ext4 -J size=$PER_CORE_JOURNAL_SIZE,multi_journal -E lazy_itable_init=0,lazy_journal_init=0 -F -G 1 $DEV_PATH
 	sudo $E2FSPROG_PATH/misc/tune2fs -o journal_data $DEV_PATH
 fi
